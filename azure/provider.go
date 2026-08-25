@@ -37,7 +37,13 @@ type Provider struct {
 	cache *cache
 }
 
-// clientEntry lazily builds and caches a single Azure client.
+// clientEntry lazily builds and caches a single Azure client. A failed
+// build is cached too - sync.Once runs build at most once regardless of
+// outcome, so every later caller for that key gets the same error rather
+// than retrying. All build funcs are pure SDK constructors with no I/O
+// (credential resolution is separately memoized in credOnce), so this is
+// benign in practice, but it is a behaviour change from the previous
+// design, which retried construction on the next call.
 type clientEntry struct {
 	once sync.Once
 	val  any
