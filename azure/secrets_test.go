@@ -75,6 +75,26 @@ func TestSecretFunc_LookupsAndErrors(t *testing.T) {
 	}
 }
 
+// TestSecret_NilValueIsAnError proves a 200 response with no "value" field
+// (secret.Value == nil in the SDK response) is reported as an error rather
+// than dereferencing a nil pointer. This is one of the four behaviour
+// changes from krmgen's original code (see docs/specification.md in
+// krmgen): the original dereferenced secret.Value unchecked.
+func TestSecret_NilValueIsAnError(t *testing.T) {
+	sender := &mockSender{doFunc: func(*http.Request) (*http.Response, error) {
+		return mockResponse(http.StatusOK, `{"id":"https://fake.vault.io/secrets/sec/v1"}`), nil
+	}}
+	p := newTestProvider(t, sender)
+
+	_, err := p.Secret("vault_name", "sec", "v1")
+	if err == nil {
+		t.Fatal("Secret() error = nil, want an error for a secret with no value")
+	}
+	if !strings.Contains(err.Error(), "sec") {
+		t.Errorf("error = %v, want it to name the secret", err)
+	}
+}
+
 // TestSecret_LatestActiveVersion ports krmgen's TestGetLatestActiveSecret: the
 // version-selection rules for a version-less lookup - a disabled version is
 // skipped, a version whose notBefore is in the future is skipped, and the

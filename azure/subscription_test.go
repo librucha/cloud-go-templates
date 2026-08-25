@@ -63,6 +63,35 @@ func TestSubscriptionID_FallsBackToAzureList(t *testing.T) {
 	}
 }
 
+// TestSubscriptionID_ListFallbackIsMemoized proves a second call to
+// subscriptionID(), with neither WithSubscriptionID nor
+// AZURE_SUBSCRIPTION_ID set, does not call Azure again. The original code
+// resolved the subscription once per client construction; without
+// memoization here, every cache-missed call needing a subscription ID would
+// list subscriptions again.
+func TestSubscriptionID_ListFallbackIsMemoized(t *testing.T) {
+	t.Setenv("AZURE_SUBSCRIPTION_ID", "")
+	sender := &mockSender{doFunc: func(*http.Request) (*http.Response, error) {
+		return mockResponse(200, `{"value":[{"subscriptionId":"first-sub"}]}`), nil
+	}}
+	p := newTestProvider(t, sender)
+
+	first, err := p.subscriptionID()
+	if err != nil {
+		t.Fatalf("first call failed: %v", err)
+	}
+	second, err := p.subscriptionID()
+	if err != nil {
+		t.Fatalf("second call failed: %v", err)
+	}
+	if first != second || first != "first-sub" {
+		t.Errorf("got %q then %q, want both to be %q", first, second, "first-sub")
+	}
+	if sender.calls != 1 {
+		t.Errorf("Azure was called %d times, want once", sender.calls)
+	}
+}
+
 // TestSubscriptionID_NoSubscriptionsIsAnError proves an empty listing is
 // reported as an error rather than returning a zero-value subscription ID.
 func TestSubscriptionID_NoSubscriptionsIsAnError(t *testing.T) {

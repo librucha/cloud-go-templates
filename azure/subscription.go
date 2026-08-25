@@ -12,7 +12,20 @@ import (
 // subscriptionID resolves the subscription to use: the one passed to
 // WithSubscriptionID, else the AZURE_SUBSCRIPTION_ID environment variable,
 // else the first subscription the credential can see.
+//
+// The result is memoized behind a sync.Once, the same pattern credential()
+// uses. Without it, every cache-missed call that needs a subscription ID
+// (chiefly UserIdentityClientIDFunc) and finds neither WithSubscriptionID nor
+// AZURE_SUBSCRIPTION_ID set would call NewListPager again - the original
+// resolved this once per client construction; this restores that.
 func (p *Provider) subscriptionID() (string, error) {
+	p.subIDOnce.Do(func() {
+		p.subID, p.subIDErr = p.resolveSubscriptionID()
+	})
+	return p.subID, p.subIDErr
+}
+
+func (p *Provider) resolveSubscriptionID() (string, error) {
 	if p.cfg.subscriptionID != "" {
 		return p.cfg.subscriptionID, nil
 	}

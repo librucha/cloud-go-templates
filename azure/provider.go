@@ -27,6 +27,10 @@ type Provider struct {
 	cred     azcore.TokenCredential
 	credErr  error
 
+	subIDOnce sync.Once
+	subID     string
+	subIDErr  error
+
 	// clients holds one *clientEntry per client kind (keyed by e.g.
 	// "secrets:myvault"). Each entry has its own sync.Once, so building the
 	// certificates client for one vault never blocks building the secrets
@@ -104,7 +108,10 @@ func (p *Provider) credential() (azcore.TokenCredential, error) {
 // goroutines racing to build the *same* client do wait, but only until the
 // first build finishes, and both then get the one client it produced.
 func (p *Provider) client(key string, build func(azcore.TokenCredential) (any, error)) (any, error) {
-	v, _ := p.clients.LoadOrStore(key, &clientEntry{})
+	v, ok := p.clients.Load(key)
+	if !ok {
+		v, _ = p.clients.LoadOrStore(key, &clientEntry{})
+	}
 	entry := v.(*clientEntry)
 	entry.once.Do(func() {
 		cred, err := p.credential()

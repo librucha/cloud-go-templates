@@ -37,7 +37,10 @@ func (p *Provider) key(vaultName, name, version string) (string, error) {
 		return "", err
 	}
 
-	pemKey := wrapKey(&resp.KeyBundle)
+	pemKey, err := wrapKey(&resp.KeyBundle)
+	if err != nil {
+		return "", fmt.Errorf("key %q in vault %q: %w", name, vaultName, err)
+	}
 	p.cache.put(key, pemKey)
 	return pemKey, nil
 }
@@ -60,10 +63,20 @@ func (p *Provider) keysClient(vaultName string) (*azkeys.Client, error) {
 // header and the payload has been krmgen's behaviour all along; it is
 // preserved here unchanged because correcting it would change rendered
 // output, which this port must not do.
-func wrapKey(key *azkeys.KeyBundle) string {
+//
+// An unusual Key Vault response - no key material at all, or a key kind Key
+// Vault omitted - is reported as an error instead of dereferencing a nil
+// pointer and killing the process.
+func wrapKey(key *azkeys.KeyBundle) (string, error) {
+	if key == nil || key.Key == nil {
+		return "", fmt.Errorf("key vault response has no key material")
+	}
+	if key.Key.Kty == nil {
+		return "", fmt.Errorf("key vault response has no key type")
+	}
 	block := &pem.Block{
 		Type:  fmt.Sprintf("%s PRIVATE KEY", *key.Key.Kty),
 		Bytes: key.Key.N,
 	}
-	return string(pem.EncodeToMemory(block))
+	return string(pem.EncodeToMemory(block)), nil
 }

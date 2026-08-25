@@ -79,6 +79,39 @@ func TestKeyFunc_ReturnsModulusUnderAPrivateKeyHeader(t *testing.T) {
 	}
 }
 
+// TestKeyFunc_NoKeyMaterialIsAnError proves a Key Vault response with no key
+// material (key.Key == nil) is reported as an error rather than a
+// nil-pointer dereference. This is the one remaining unusual-response path
+// that dereferenced unchecked before this phase converted it, alongside the
+// storage and identity paths, from a process-killing panic to an error.
+func TestKeyFunc_NoKeyMaterialIsAnError(t *testing.T) {
+	sender := &mockSender{doFunc: func(*http.Request) (*http.Response, error) {
+		return mockResponse(200, `{}`), nil
+	}}
+	p := newTestProvider(t, sender)
+
+	_, err := p.KeyFunc("vault", "k", "v1")
+	if err == nil {
+		t.Fatal("KeyFunc() error = nil, want an error when the response has no key material")
+	}
+	if !strings.Contains(err.Error(), "k") || !strings.Contains(err.Error(), "vault") {
+		t.Errorf("error = %v, want it to name the key and vault", err)
+	}
+}
+
+// TestKeyFunc_NoKeyTypeIsAnError proves a Key Vault response whose key has no
+// Kty is reported as an error rather than a nil-pointer dereference.
+func TestKeyFunc_NoKeyTypeIsAnError(t *testing.T) {
+	sender := &mockSender{doFunc: func(*http.Request) (*http.Response, error) {
+		return mockResponse(200, `{"key":{"kid":"https://fake.vault.io/keys/k/v1","n":"AQAB","e":"AQAB"}}`), nil
+	}}
+	p := newTestProvider(t, sender)
+
+	if _, err := p.KeyFunc("vault", "k", "v1"); err == nil {
+		t.Fatal("KeyFunc() error = nil, want an error when the key has no key type")
+	}
+}
+
 // TestKeyFunc_CachesRepeatedLookups proves a second lookup for the same
 // vault/name/version is served from the cache rather than the vault.
 func TestKeyFunc_CachesRepeatedLookups(t *testing.T) {

@@ -56,7 +56,7 @@ func newTestProvider(t *testing.T, sender *mockSender, extra ...Option) *Provide
 	t.Helper()
 	opts := append([]Option{
 		WithCredential(fakeCredential{}),
-		withTransport(sender),
+		WithTransport(sender),
 	}, extra...)
 	p, err := New(context.Background(), opts...)
 	if err != nil {

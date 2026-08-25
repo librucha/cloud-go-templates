@@ -108,7 +108,7 @@ func extractCert(b64Content string) (any, error) {
 	}
 
 	if strings.TrimSpace(certs.String()) == "" {
-		return nil, fmt.Errorf("no KEY block found")
+		return nil, fmt.Errorf("no certificate block found")
 	}
 	return certs.String(), nil
 }

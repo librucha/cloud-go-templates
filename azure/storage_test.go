@@ -41,6 +41,25 @@ func TestStorageKeyFunc_NoKeysIsAnErrorNotAPanic(t *testing.T) {
 	}
 }
 
+// TestStorageKeyFunc_NilFirstKeyValueIsAnError proves an account whose first
+// key has no value (Keys[0].Value == nil) is reported as an error rather
+// than dereferencing a nil pointer. This is distinct from the empty-Keys
+// case above: here Azure returned a key entry, just one with no value.
+func TestStorageKeyFunc_NilFirstKeyValueIsAnError(t *testing.T) {
+	sender := &mockSender{doFunc: func(*http.Request) (*http.Response, error) {
+		return mockResponse(200, `{"keys":[{"keyName":"key1"}]}`), nil
+	}}
+	p := newTestProvider(t, sender)
+
+	_, err := p.StorageKeyFunc("sub", "rg", "account")
+	if err == nil {
+		t.Fatal("StorageKeyFunc() error = nil, want an error when the first key has no value")
+	}
+	if !strings.Contains(err.Error(), "account") {
+		t.Errorf("error = %v, want it to name the storage account", err)
+	}
+}
+
 // TestStorageKeyFunc_PropagatesFailure ports krmgen's TestGetStoreKey_PropagatesFailure.
 func TestStorageKeyFunc_PropagatesFailure(t *testing.T) {
 	sender := &mockSender{doFunc: func(*http.Request) (*http.Response, error) {

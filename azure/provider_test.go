@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"net/http"
+	"reflect"
 	"sort"
 	"testing"
 )
@@ -39,6 +40,47 @@ func TestFuncMap_ExposesEveryFunctionUnderItsTemplateName(t *testing.T) {
 		}
 		sort.Strings(got)
 		t.Errorf("FuncMap() exposes %d functions %v, want exactly %d %v", len(funcs), got, len(want), want)
+	}
+}
+
+// TestFuncMap_BindsEachNameToItsOwnFunction closes the gap left by
+// TestFuncMap_ExposesEveryFunctionUnderItsTemplateName above: that test only
+// proves every name is registered, not what it is bound to. Two names of the
+// same Go signature (azCert/azKey both take (string, ...string) (any,
+// error)) can be swapped in FuncMap() and the exposure test - and every
+// other test in this repository and in krmgen - still passes, because
+// nothing calls them through a mismatched name. This test compares the code
+// pointer behind each map entry to the code pointer of the method it is
+// supposed to be, so a swap fails here even though it type-checks and even
+// though every behavioural test stays green.
+func TestFuncMap_BindsEachNameToItsOwnFunction(t *testing.T) {
+	p, err := New(context.Background(), WithCredential(fakeCredential{}))
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	funcs := p.FuncMap()
+
+	ptr := func(fn any) uintptr { return reflect.ValueOf(fn).Pointer() }
+
+	want := map[string]uintptr{
+		"azSec":                  ptr(p.SecretFunc),
+		"toPem":                  ptr(ToPem),
+		"azPfxKey":               ptr(p.PfxKeyFunc),
+		"azPfxCrt":               ptr(p.PfxCertFunc),
+		"azCert":                 ptr(p.CertificateFunc),
+		"azKey":                  ptr(p.KeyFunc),
+		"azStoreKey":             ptr(p.StorageKeyFunc),
+		"azUserIdentityClientId": ptr(p.UserIdentityClientIDFunc),
+	}
+	for name, wantPtr := range want {
+		fn, ok := funcs[name]
+		if !ok {
+			t.Errorf("FuncMap() is missing %q", name)
+			continue
+		}
+		if got := ptr(fn); got != wantPtr {
+			t.Errorf("FuncMap()[%q] is bound to a different function than expected (code pointer %#x, want %#x)", name, got, wantPtr)
+		}
 	}
 }
 
