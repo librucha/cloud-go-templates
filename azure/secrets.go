@@ -51,10 +51,13 @@ func (p *Provider) Secret(vaultName, name, version string) (string, error) {
 		return "", fmt.Errorf("secret %q in vault %q has no value", name, vaultName)
 	}
 
-	// Cache under the version that was asked for and under the one that was
-	// resolved, so a later call naming that version hits too.
+	// Cache under the version that was asked for and, if a version-less call
+	// resolved one, under that version too, so a later call naming it hits
+	// the cache instead of the network.
 	p.cache.put(key, *secret.Value)
-	p.cache.put(cacheKey("secret", vaultName, name, version), *secret.Value)
+	if resolvedKey := cacheKey("secret", vaultName, name, version); resolvedKey != key {
+		p.cache.put(resolvedKey, *secret.Value)
+	}
 	return *secret.Value, nil
 }
 
