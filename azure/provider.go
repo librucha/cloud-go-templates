@@ -55,8 +55,10 @@ func New(ctx context.Context, opts ...Option) (*Provider, error) {
 // name templates call them under.
 func (p *Provider) FuncMap() template.FuncMap {
 	return template.FuncMap{
-		"azSec": p.SecretFunc,
-		"toPem": ToPem,
+		"azSec":    p.SecretFunc,
+		"toPem":    ToPem,
+		"azPfxKey": p.PfxKeyFunc,
+		"azPfxCrt": p.PfxCertFunc,
 	}
 }
 

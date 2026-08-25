@@ -30,6 +30,8 @@ call.
 |---|---|---|
 | `azSec <vault> <name> [version]` | 2–3 | Key Vault secret value |
 | `toPem <type> <data>` | 2 | The data wrapped in a PEM block |
+| `azPfxKey <vault> <secret> [version]` | 2–3 | Private key extracted from a PKCS12 secret, PEM-encoded |
+| `azPfxCrt <vault> <secret> [version]` | 2–3 | Certificate chain extracted from a PKCS12 secret, PEM-encoded |
 
 Omitting the version selects the most recently created enabled version whose
 `notBefore` has passed.
