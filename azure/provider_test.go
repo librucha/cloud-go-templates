@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"net/http"
+	"sort"
 	"testing"
 )
 
@@ -12,17 +13,32 @@ func TestNew_RequiresContext(t *testing.T) {
 	}
 }
 
+// TestFuncMap_ExposesEveryFunctionUnderItsTemplateName pins the FuncMap's
+// exact contents. It is the library's public surface: a function appearing
+// or vanishing is a change to that surface and should fail this test, not
+// surprise a consumer.
 func TestFuncMap_ExposesEveryFunctionUnderItsTemplateName(t *testing.T) {
 	p, err := New(context.Background(), WithCredential(fakeCredential{}))
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
+	want := []string{
+		"azSec", "toPem", "azPfxKey", "azPfxCrt",
+		"azCert", "azKey", "azStoreKey", "azUserIdentityClientId",
+	}
 	funcs := p.FuncMap()
-	// Later tasks extend this list and the test with it.
-	for _, name := range []string{"azSec", "toPem", "azPfxKey", "azPfxCrt", "azCert", "azKey", "azStoreKey", "azUserIdentityClientId"} {
+	for _, name := range want {
 		if _, ok := funcs[name]; !ok {
 			t.Errorf("FuncMap() is missing %q", name)
 		}
+	}
+	if len(funcs) != len(want) {
+		got := make([]string, 0, len(funcs))
+		for name := range funcs {
+			got = append(got, name)
+		}
+		sort.Strings(got)
+		t.Errorf("FuncMap() exposes %d functions %v, want exactly %d %v", len(funcs), got, len(want), want)
 	}
 }
 

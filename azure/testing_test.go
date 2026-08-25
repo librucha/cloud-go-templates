@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -21,14 +22,19 @@ func (fakeCredential) GetToken(context.Context, policy.TokenRequestOptions) (azc
 }
 
 // mockSender records how many requests were made and answers each one with
-// whatever doFunc returns.
+// whatever doFunc returns. calls is guarded by a mutex because the
+// concurrency test drives one sender from many goroutines at once; every
+// other test still only reads calls after all its requests have completed.
 type mockSender struct {
+	mu     sync.Mutex
 	calls  int
 	doFunc func(r *http.Request) (*http.Response, error)
 }
 
 func (m *mockSender) Do(r *http.Request) (*http.Response, error) {
+	m.mu.Lock()
 	m.calls++
+	m.mu.Unlock()
 	return m.doFunc(r)
 }
 

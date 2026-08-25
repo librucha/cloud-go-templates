@@ -55,3 +55,13 @@ it has no keys, rather than panicking.
 
 Every lookup is cached for the lifetime of the provider and keyed by the
 function's own arguments. Nothing is invalidated mid-render.
+
+## Concurrency
+
+A `Provider` is safe for concurrent use: call its functions - including
+different functions, against different vaults - from as many goroutines as
+you like without additional locking. Building a client for one vault or
+resource kind never blocks building a client for another; only two callers
+racing to build the *same* client wait on each other, and both then share the
+client the first one built. `go test -race ./...` covers this and would fail
+if it stopped being true.

@@ -27,10 +27,21 @@ type Provider struct {
 	cred     azcore.TokenCredential
 	credErr  error
 
-	clientsMu sync.Mutex
-	clients   map[string]any
+	// clients holds one *clientEntry per client kind (keyed by e.g.
+	// "secrets:myvault"). Each entry has its own sync.Once, so building the
+	// certificates client for one vault never blocks building the secrets
+	// client for another - only concurrent builds under the *same* key wait
+	// on each other, and that wait resolves to the same cached client.
+	clients sync.Map
 
 	cache *cache
+}
+
+// clientEntry lazily builds and caches a single Azure client.
+type clientEntry struct {
+	once sync.Once
+	val  any
+	err  error
 }
 
 // New builds a Provider. It performs no I/O: credentials and clients are
@@ -44,10 +55,9 @@ func New(ctx context.Context, opts ...Option) (*Provider, error) {
 		opt(&cfg)
 	}
 	return &Provider{
-		ctx:     ctx,
-		cfg:     cfg,
-		clients: make(map[string]any, 8),
-		cache:   newCache(),
+		ctx:   ctx,
+		cfg:   cfg,
+		cache: newCache(),
 	}, nil
 }
 
@@ -81,20 +91,22 @@ func (p *Provider) credential() (azcore.TokenCredential, error) {
 
 // client returns the client stored under key, or builds one with build and
 // stores it. Clients are reused for the provider's lifetime.
+//
+// Construction happens under a per-key sync.Once, not a lock shared by every
+// client kind: two goroutines building different clients (say, secrets for
+// one vault and certificates for another) never wait on each other. Two
+// goroutines racing to build the *same* client do wait, but only until the
+// first build finishes, and both then get the one client it produced.
 func (p *Provider) client(key string, build func(azcore.TokenCredential) (any, error)) (any, error) {
-	p.clientsMu.Lock()
-	defer p.clientsMu.Unlock()
-	if c, ok := p.clients[key]; ok {
-		return c, nil
-	}
-	cred, err := p.credential()
-	if err != nil {
-		return nil, err
-	}
-	c, err := build(cred)
-	if err != nil {
-		return nil, err
-	}
-	p.clients[key] = c
-	return c, nil
+	v, _ := p.clients.LoadOrStore(key, &clientEntry{})
+	entry := v.(*clientEntry)
+	entry.once.Do(func() {
+		cred, err := p.credential()
+		if err != nil {
+			entry.err = err
+			return
+		}
+		entry.val, entry.err = build(cred)
+	})
+	return entry.val, entry.err
 }
