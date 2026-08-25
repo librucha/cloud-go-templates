@@ -34,6 +34,8 @@ call.
 | `azPfxCrt <vault> <secret> [version]` | 2–3 | Certificate chain extracted from a PKCS12 secret, PEM-encoded |
 | `azCert <vault> <name> [version]` | 2–3 | Key Vault certificate, PEM-encoded |
 | `azKey <vault> <name> [version]` | 2–3 | Key Vault key's RSA modulus, PEM-wrapped under an `"... PRIVATE KEY"` header - **not actually a private key**; see below |
+| `azStoreKey <subscription> <resourceGroup> <account>` | 3 | Storage account's first access key |
+| `azUserIdentityClientId <resourceGroup> <name>` | 2 | Client ID of a user-assigned managed identity |
 
 Omitting the version selects the most recently created enabled version whose
 `notBefore` has passed.
@@ -42,6 +44,12 @@ Omitting the version selects the most recently created enabled version whose
 `"<KTY> PRIVATE KEY"` PEM header since its earliest version. That mismatch
 between header and payload is preserved deliberately - fixing it would change
 rendered output for anyone already depending on this function.
+
+`azStoreKey` takes its subscription as an explicit argument. `azUserIdentityClientId`
+has none to pass, so it resolves one itself: `azure.WithSubscriptionID`, else
+the `AZURE_SUBSCRIPTION_ID` environment variable, else the first subscription
+the credential can see. `azStoreKey` returns an error naming the account if
+it has no keys, rather than panicking.
 
 ## Caching
 
