@@ -59,6 +59,8 @@ func (p *Provider) FuncMap() template.FuncMap {
 		"toPem":    ToPem,
 		"azPfxKey": p.PfxKeyFunc,
 		"azPfxCrt": p.PfxCertFunc,
+		"azCert":   p.CertificateFunc,
+		"azKey":    p.KeyFunc,
 	}
 }
 

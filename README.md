@@ -32,9 +32,16 @@ call.
 | `toPem <type> <data>` | 2 | The data wrapped in a PEM block |
 | `azPfxKey <vault> <secret> [version]` | 2–3 | Private key extracted from a PKCS12 secret, PEM-encoded |
 | `azPfxCrt <vault> <secret> [version]` | 2–3 | Certificate chain extracted from a PKCS12 secret, PEM-encoded |
+| `azCert <vault> <name> [version]` | 2–3 | Key Vault certificate, PEM-encoded |
+| `azKey <vault> <name> [version]` | 2–3 | Key Vault key's RSA modulus, PEM-wrapped under an `"... PRIVATE KEY"` header - **not actually a private key**; see below |
 
 Omitting the version selects the most recently created enabled version whose
 `notBefore` has passed.
+
+`azKey` has emitted the RSA modulus (the public part of the key pair) under a
+`"<KTY> PRIVATE KEY"` PEM header since its earliest version. That mismatch
+between header and payload is preserved deliberately - fixing it would change
+rendered output for anyone already depending on this function.
 
 ## Caching
 

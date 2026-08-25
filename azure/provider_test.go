@@ -19,7 +19,7 @@ func TestFuncMap_ExposesEveryFunctionUnderItsTemplateName(t *testing.T) {
 	}
 	funcs := p.FuncMap()
 	// Later tasks extend this list and the test with it.
-	for _, name := range []string{"azSec", "toPem", "azPfxKey", "azPfxCrt"} {
+	for _, name := range []string{"azSec", "toPem", "azPfxKey", "azPfxCrt", "azCert", "azKey"} {
 		if _, ok := funcs[name]; !ok {
 			t.Errorf("FuncMap() is missing %q", name)
 		}
