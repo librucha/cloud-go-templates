@@ -27,8 +27,7 @@ func (p *Provider) StorageKeyFunc(subscriptionID, resourceGroup, account string)
 	}
 	// The version of this code that shipped in krmgen indexed Keys[0]
 	// without checking the length, so an account with no keys panicked and
-	// took the whole process down. This is the one deliberate behaviour
-	// change in this phase: name the account in an error instead.
+	// took the whole process down. Name the account in an error instead.
 	if len(keys.Keys) == 0 || keys.Keys[0].Value == nil {
 		return "", fmt.Errorf("storage account %q in resource group %q has no keys", account, resourceGroup)
 	}
