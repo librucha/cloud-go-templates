@@ -1,0 +1,40 @@
+name: Feature request
+description: Propose a new template function, provider or option
+labels: [ enhancement ]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to render that you cannot render today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API
+      description: >
+        The template call you would like to write, and the Go signature behind
+        it. Example: `{{ azTableEntity "account" "table" "key" }}`.
+      render: go
+    validations:
+      required: true
+
+  - type: dropdown
+    id: cloud
+    attributes:
+      label: Which cloud
+      options:
+        - Azure
+        - AWS
+        - Google Cloud
+        - Cloud-agnostic
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered

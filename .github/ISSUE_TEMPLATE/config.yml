@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or usage help
+    url: https://github.com/librucha/cloud-go-templates/discussions
+    about: Ask how to use the library, or discuss an idea before opening an issue.
+  - name: Security vulnerability
+    url: https://github.com/librucha/cloud-go-templates/security/advisories/new
+    about: Report privately. Do not open a public issue for a vulnerability.

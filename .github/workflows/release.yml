@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify the tagged commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -race -count=1 ./...
+
+  release:
+    name: Publish GitHub release
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Release notes are generated from the commit range since the
+          # previous tag, so the full history and all tags are needed.
+          fetch-depth: 0
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # A pre-release tag carries a hyphenated suffix (v1.2.3-rc.1).
+          extra=()
+          case "${GITHUB_REF_NAME}" in
+            *-*) extra+=(--prerelease) ;;
+          esac
+          # A Go library ships no binaries: the module itself is served by the
+          # module proxy straight from the tag. The release exists for notes.
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --verify-tag \
+            "${extra[@]}"
+
+  proxy:
+    name: Warm the module proxy
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Request the new version from proxy.golang.org
+        # Makes the version show up on pkg.go.dev without waiting for someone
+        # to be the first to `go get` it.
+        run: |
+          GOPROXY=proxy.golang.org go list -m \
+            "github.com/librucha/cloud-go-templates@${GITHUB_REF_NAME}"

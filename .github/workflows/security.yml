@@ -1,0 +1,63 @@
+name: Security
+
+on:
+  push:
+    branches: [ 'main', 'master' ]
+  pull_request:
+    branches: [ 'main', 'master' ]
+  schedule:
+    # Weekly, so a newly published advisory surfaces without a push.
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  govulncheck:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Deliberately NOT go-version-file: go.mod. go.mod names the oldest
+      # supported language version (1.26.0), and govulncheck reports standard
+      # library advisories relative to the toolchain it builds with - pinning
+      # to an unpatched patch release would report every stdlib advisory fixed
+      # since, forever. Scan with the current toolchain; the minimum stays a
+      # compatibility statement, not a security one.
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Run govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: go
+          queries: security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:go

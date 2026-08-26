@@ -1,0 +1,59 @@
+name: Bug report
+description: Something in the library behaves differently than documented
+labels: [ bug ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never paste real secrets, certificates, tokens or subscription IDs.
+        Redact them before submitting.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: >
+        The smallest template and Go code that shows the problem. A failing
+        test using `azure.WithTransport` with a stub transport is ideal.
+      render: go
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Library version
+      placeholder: v0.1.0 or a commit SHA
+    validations:
+      required: true
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go version
+      placeholder: output of `go version`
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS and architecture
+      placeholder: macOS 15 arm64
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error output
+      description: The full error message, with secrets redacted.
+      render: text

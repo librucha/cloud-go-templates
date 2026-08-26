@@ -1,0 +1,120 @@
+# https://taskfile.dev
+version: '3'
+
+vars:
+  COVERAGE_FILE: coverage.out
+  COVERAGE_HTML: coverage.html
+  GOLANGCI_VERSION: v2.13.1
+
+tasks:
+  default:
+    desc: "Display available tasks"
+    cmds:
+      - task --list
+    silent: true
+
+  install-tools:
+    desc: "Install development tools (golangci-lint, govulncheck)"
+    cmds:
+      - go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_VERSION}}
+      - go install golang.org/x/vuln/cmd/govulncheck@latest
+
+  deps:
+    desc: "Download module dependencies"
+    cmds:
+      - go mod download
+
+  tidy:
+    desc: "Clean up go.mod and go.sum"
+    cmds:
+      - go mod tidy
+
+  verify:
+    desc: "Verify dependencies against go.sum"
+    cmds:
+      - go mod verify
+
+  fmt:
+    desc: "Format Go code"
+    cmds:
+      - go fmt ./...
+
+  vet:
+    desc: "Run go vet"
+    cmds:
+      - go vet ./...
+
+  lint:
+    desc: "Run golangci-lint"
+    cmds:
+      - golangci-lint run ./...
+
+  lint-fix:
+    desc: "Run golangci-lint with autofix"
+    cmds:
+      - golangci-lint run --fix ./...
+
+  build:
+    desc: "Compile all packages (a library has no binary)"
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    cmds:
+      - go build ./...
+
+  test:
+    desc: "Run tests with the race detector"
+    cmds:
+      - go test -race -count=1 ./...
+
+  test-coverage:
+    desc: "Run tests and write an HTML coverage report"
+    cmds:
+      - go test -race -count=1 -coverprofile={{.COVERAGE_FILE}} -covermode=atomic ./...
+      - go tool cover -html={{.COVERAGE_FILE}} -o {{.COVERAGE_HTML}}
+      - go tool cover -func={{.COVERAGE_FILE}} | tail -1
+
+  vuln:
+    desc: "Scan dependencies for known vulnerabilities"
+    cmds:
+      - govulncheck ./...
+
+  doc:
+    desc: "Serve the package documentation on http://localhost:6060"
+    cmds:
+      - go run golang.org/x/pkgsite/cmd/pkgsite@latest -open .
+
+  check:
+    desc: "Run everything CI runs (fmt, vet, lint, test)"
+    cmds:
+      - task: fmt
+      - task: vet
+      - task: lint
+      - task: test
+
+  upgrade:
+    desc: "Upgrade all dependencies"
+    cmds:
+      - go get -v -u ./...
+      - go mod tidy
+
+  clean:
+    desc: "Remove build and coverage artifacts"
+    cmds:
+      - rm -f {{.COVERAGE_FILE}} {{.COVERAGE_HTML}}
+      - go clean -cache -testcache
+
+  release:
+    desc: "Tag a release (usage: task release -- v1.2.3); the tag push triggers the release workflow"
+    preconditions:
+      - sh: 'test -n "{{.CLI_ARGS}}"'
+        msg: "Pass the version, e.g. task release -- v1.2.3"
+      - sh: 'echo "{{.CLI_ARGS}}" | grep -Eq "^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$"'
+        msg: "Version must look like v1.2.3 or v1.2.3-rc.1"
+      - sh: 'test -z "$(git status --porcelain)"'
+        msg: "Working tree is dirty; commit or stash first"
+    cmds:
+      - task: check
+      - 'git tag -a {{.CLI_ARGS}} -m "Release {{.CLI_ARGS}}"'
+      - 'echo "Tag {{.CLI_ARGS}} created. Push it with git push origin {{.CLI_ARGS}}"'

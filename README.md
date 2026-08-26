@@ -1,5 +1,11 @@
 # cloud-go-templates
 
+[![CI](https://github.com/librucha/cloud-go-templates/actions/workflows/ci.yml/badge.svg)](https://github.com/librucha/cloud-go-templates/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/librucha/cloud-go-templates.svg)](https://pkg.go.dev/github.com/librucha/cloud-go-templates)
+[![Go Report Card](https://goreportcard.com/badge/github.com/librucha/cloud-go-templates)](https://goreportcard.com/report/github.com/librucha/cloud-go-templates)
+[![Go version](https://img.shields.io/github/go-mod/go-version/librucha/cloud-go-templates)](go.mod)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Go template functions that read configuration out of public clouds, in the
 spirit of [sprig](https://github.com/Masterminds/sprig): you build a `FuncMap`
 and hand it to `text/template`.
@@ -152,3 +158,31 @@ that one lock, which is a liveness defect the race detector cannot see.
 `TestProvider_UnrelatedClientKindsDoNotSerialize` is what actually backs that
 claim: it is a timing test that fails if building one client kind blocks
 building another.
+
+## Development
+
+Requires Go (the version in [`go.mod`](go.mod)) and
+[Task](https://taskfile.dev/installation/).
+
+```sh
+task install-tools   # golangci-lint, govulncheck
+task check           # fmt, vet, lint, test
+task test-coverage   # writes coverage.html
+task --list          # everything else
+```
+
+Every test runs offline: no Azure credentials, no network. See
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Contributing
+
+Issues and pull requests are welcome. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) first - it covers the test conventions and
+what counts as a breaking change here. Participation is governed by the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+Found a security problem? Do not open an issue; see [SECURITY.md](SECURITY.md).
+
+## License
+
+[MIT](LICENSE) © Libor Ondrušek

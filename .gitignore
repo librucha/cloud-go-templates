@@ -222,3 +222,9 @@ build
 dist
 .idea/
 .superpowers/
+### Project ###
+coverage.html
+
+# Implementation plans are working notes for a single change; the specs
+# they are derived from are tracked in docs/superpowers/specs/.
+docs/superpowers/plans/
