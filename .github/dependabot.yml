@@ -8,6 +8,8 @@ updates:
     open-pull-requests-limit: 10
     labels:
       - dependencies
+    commit-message:
+      prefix: "chore(deps)"
     groups:
       # The Azure SDK modules move together; one PR per bump would be noise.
       azure-sdk:
@@ -26,3 +28,10 @@ updates:
     labels:
       - dependencies
       - ci
+    commit-message:
+      prefix: "ci(deps)"
+    groups:
+      # Batch action bumps into one PR per week.
+      actions:
+        patterns:
+          - "*"
