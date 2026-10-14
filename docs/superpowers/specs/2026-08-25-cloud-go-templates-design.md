@@ -41,9 +41,10 @@ instance owns everything, and two providers share nothing.
 - **Not multi-cloud yet.** The name is an ambition. AWS and GCP would arrive
   as sibling functions under their own prefixes (`awsSec`, `gcpSec`), not by
   overloading the Azure ones.
-- **No Entra ID.** Group and application lookups were considered and
-  deliberately dropped, which also keeps `msgraph-sdk-go` out of the
-  dependency graph.
+- **No `msgraph-sdk-go`.** Entra ID group and application lookups were
+  dropped from v0.1.0. `entraAppClientId` was added later; it calls Microsoft
+  Graph over plain REST through an azcore pipeline, so the SDK still stays out
+  of the dependency graph.
 
 ## 2. Architecture
 
@@ -78,6 +79,7 @@ package stay split by resource kind.
 | `keys.go` | `azKey` |
 | `storage.go` | `azStoreKey` |
 | `identity.go` | `azUserIdentityClientId` |
+| `entra.go` | `entraAppClientId` / `entraApplicationClientId`, over Microsoft Graph REST |
 | `subscription.go` | which subscription to use, resolved once |
 | `testing_test.go` | the one mock transport every test shares |
 
@@ -116,8 +118,8 @@ context to a long-lived one.
 
 ### Template functions
 
-`FuncMap()` returns exactly these eight entries, and that set is the library's
-public contract:
+`FuncMap()` returns exactly these ten entries (nine functions, one of them
+under two names), and that set is the library's public contract:
 
 | Function | Arity | Returns |
 |---|---|---|
@@ -129,6 +131,7 @@ public contract:
 | `azKey <vault> <name> [version]` | 2–3 | see the note below |
 | `azStoreKey <subscription> <group> <account>` | 3 | first storage account key |
 | `azUserIdentityClientId <group> <name>` | 2 | client ID of a user-assigned managed identity |
+| `entraAppClientId <displayName>` | 1 | appId of an Entra ID application; alias `entraApplicationClientId` |
 
 A test asserts the map's exact contents **and** that each name is bound to the
 function it claims — a swap between two entries would otherwise pass every
@@ -247,6 +250,7 @@ evicted. Nothing persists between processes.
 | No in-flight request deduplication | a concurrent burst on one cold key multiplies calls to Azure |
 | Azure SDK versions are pinned low | they were matched to the consumer this was extracted from, so the extraction could not smuggle in an upgrade; raising them is a deliberate, separate change |
 | System-assigned managed identities unsupported | see section 4 |
+| `entraAppClientId` targets `graph.microsoft.com` only | sovereign clouds (US Gov, China) cannot use it |
 
 ## 8. Open questions
 

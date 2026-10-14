@@ -11,6 +11,10 @@ new major version and a new import path.
 
 ### Added
 
+- `entraAppClientId <displayName>` template function, aliased as
+  `entraApplicationClientId`: the application (client) ID of an Entra ID app
+  registration, looked up by display name through Microsoft Graph.
+
 - Project infrastructure for public release: Taskfile, golangci-lint config,
   CI matrix (Linux/macOS/Windows), CodeQL and govulncheck workflows, tag-driven
   release workflow, Dependabot, issue and PR templates, contributor docs.

@@ -103,6 +103,7 @@ and mock sender this package's own tests use.
 | `azKey <vault> <name> [version]` | 2–3 | Key Vault key's RSA modulus, PEM-wrapped under an `"... PRIVATE KEY"` header - **not actually a private key**; see below |
 | `azStoreKey <subscription> <resourceGroup> <account>` | 3 | Storage account's first access key |
 | `azUserIdentityClientId <resourceGroup> <name>` | 2 | Client ID of a user-assigned managed identity |
+| `entraAppClientId <displayName>` | 1 | Application (client) ID of an Entra ID app registration; `entraApplicationClientId` is an alias |
 
 Omitting the version selects the most recently created enabled version whose
 `notBefore` has passed.
@@ -117,6 +118,13 @@ has none to pass, so it resolves one itself: `azure.WithSubscriptionID`, else
 the `AZURE_SUBSCRIPTION_ID` environment variable, else the first subscription
 the credential can see. `azStoreKey` returns an error naming the account if
 it has no keys, rather than panicking.
+
+`entraAppClientId` queries Microsoft Graph
+(`GET /v1.0/applications?$filter=displayName eq '<name>'`) and returns the
+match's `appId`. Display names are not unique in Entra ID, so no match or more
+than one match is an error, not a guess. The credential needs
+`Application.Read.All` on Microsoft Graph, or must own the application. Only
+the public cloud's Graph endpoint, `graph.microsoft.com`, is supported.
 
 `azPfxKey` and `azPfxCrt` are built on `golang.org/x/crypto/pkcs12`, whose own
 doc comment says it is [frozen](https://go.dev/wiki/Frozen) and not accepting

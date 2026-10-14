@@ -84,6 +84,9 @@ func (p *Provider) FuncMap() template.FuncMap {
 
 		"azStoreKey":             p.StorageKeyFunc,
 		"azUserIdentityClientId": p.UserIdentityClientIDFunc,
+
+		"entraAppClientId":         p.EntraAppClientIDFunc,
+		"entraApplicationClientId": p.EntraAppClientIDFunc,
 	}
 }
 

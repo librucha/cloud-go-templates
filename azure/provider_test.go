@@ -26,6 +26,7 @@ func TestFuncMap_ExposesEveryFunctionUnderItsTemplateName(t *testing.T) {
 	want := []string{
 		"azSec", "toPem", "azPfxKey", "azPfxCrt",
 		"azCert", "azKey", "azStoreKey", "azUserIdentityClientId",
+		"entraAppClientId", "entraApplicationClientId",
 	}
 	funcs := p.FuncMap()
 	for _, name := range want {
@@ -71,6 +72,9 @@ func TestFuncMap_BindsEachNameToItsOwnFunction(t *testing.T) {
 		"azKey":                  ptr(p.KeyFunc),
 		"azStoreKey":             ptr(p.StorageKeyFunc),
 		"azUserIdentityClientId": ptr(p.UserIdentityClientIDFunc),
+
+		"entraAppClientId":         ptr(p.EntraAppClientIDFunc),
+		"entraApplicationClientId": ptr(p.EntraAppClientIDFunc),
 	}
 	for name, wantPtr := range want {
 		fn, ok := funcs[name]

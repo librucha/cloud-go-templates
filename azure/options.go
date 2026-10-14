@@ -34,7 +34,8 @@ func WithSubscriptionID(id string) Option {
 // the network or needing Azure credentials: point it at a stub that answers
 // requests in-process (see the package's own testing_test.go for an example)
 // and every client the Provider builds - secrets, certificates, keys,
-// storage, identities, subscriptions - uses it instead of dialing out.
+// storage, identities, subscriptions, Microsoft Graph - uses it instead of
+// dialing out.
 //
 // A single Transporter is shared by every client kind. If you need
 // per-service transport options (proxies, retry policy, telemetry) beyond a
