@@ -55,6 +55,12 @@ jobs:
           case "${GITHUB_REF_NAME}" in
             *-*) extra+=(--prerelease) ;;
           esac
+          # A release published from the GitHub UI creates the tag itself, so
+          # the release already exists by the time this tag push runs.
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            echo "Release ${GITHUB_REF_NAME} already exists, skipping."
+            exit 0
+          fi
           # A Go library ships no binaries: the module itself is served by the
           # module proxy straight from the tag. The release exists for notes.
           gh release create "${GITHUB_REF_NAME}" \
